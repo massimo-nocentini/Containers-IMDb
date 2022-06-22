@@ -32,17 +32,18 @@ CTIMDb class >> customMovie: movieSpec [
 { #category : #'instance creation' }
 CTIMDb class >> load: aFilename [
 
-	| imdb actors movies anArray |
+	| imdb actors movies anArray toAdjust |
 	imdb := self new.
 
 	actors := Dictionary new.
 	movies := Dictionary new.
 
+	toAdjust := Set new.
+
 	aFilename asFileReference readStreamDo: [ :aStream | 
-		| line |
-		[ 
-		line := aStream nextLine.
-		line isNotEmpty and: [ movies size < 4000 ] ] whileTrue: [ 
+		[ aStream atEnd ] whileFalse: [ 
+			| line |
+			line := aStream nextLine.
 			(Character tab split: line) bind: [ :actorName :movieSpec | 
 				| tokens actor movie movieName movieYear movieArgs |
 				tokens := movieSpec findTokens: { $(. $) }.
@@ -58,7 +59,7 @@ CTIMDb class >> load: aFilename [
 							| aSpec |
 							aSpec := self customMovie: movieSpec.
 
-							aSpec ifEmpty: [ self halt ] ifNotEmpty: [ 
+							aSpec ifEmpty: [ toAdjust add: movieSpec ] ifNotEmpty: [ 
 								movieName := aSpec first.
 								movieYear := aSpec second.
 								movieArgs := aSpec third ] ] ]
@@ -93,7 +94,9 @@ CTIMDb class >> load: aFilename [
 
 	imdb movies: anArray.
 
-	^ imdb
+	^ { 
+		  imdb.
+		  toAdjust }
 ]
 
 { #category : #customization }
